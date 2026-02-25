@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧬 Lymphoma Type Predictor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* ---------- Base Styling ---------- */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb, #e8f5e9);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            margin-top: 30px;
+            color: #1565c0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 0.5px;
+        }
+
+        p {
+            color: #555;
+            font-size: 1.05em;
+        }
+
+        /* ---------- Card Form ---------- */
+        form {
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 18px;
+            padding: 25px;
+            width: 90%;
+            max-width: 850px;
+            margin: 20px auto;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        form:hover {
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ---------- Feature Grid ---------- */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 0.95em;
+            color: #333;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 95%;
+            font-size: 0.9em;
+            color: #333;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            border-color: #1976d2;
+            outline: none;
+            box-shadow: 0 0 5px rgba(25, 118, 210, 0.4);
+        }
+
+        /* ---------- Buttons ---------- */
+        button {
+            margin: 15px 10px 0 10px;
+            padding: 12px 25px;
+            background: linear-gradient(90deg, #42a5f5, #1e88e5);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(90deg, #64b5f6, #2196f3);
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        /* ---------- Result ---------- */
+        .result {
+            margin-top: 25px;
+            font-size: 22px;
+            font-weight: 600;
+            color: #2e7d32;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* ---------- Chart ---------- */
+        canvas {
+            margin-top: 30px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeIn 1s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* ---------- Footer ---------- */
+        footer {
+            margin-top: 40px;
+            color: #666;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        footer span {
+            color: #1565c0;
+            font-weight: 600;
+        }
+
+    </style>
+</head>
+
+<body>
+    <h1>🧬 Lymphoma Type Predictor</h1>
+    <p>20 PCA features are auto-filled randomly. Please enter the remaining 10 below.</p>
+
+    <form action="/predict" method="POST" id="predictForm">
+        <div class="feature-grid">
+            <!-- Auto-filled 20 features -->
+            {% for i in range(1, 21) %}
+            <div>
+                <label for="feature{{ i }}">Feature {{ i }}</label><br>
+                <input type="number" step="any" name="feature{{ i }}" id="feature{{ i }}" readonly>
+            </div>
+            {% endfor %}
+            <!-- User-input 10 features -->
+            {% for i in range(21, 31) %}
+            <div>
+                <label for="feature{{ i }}">Feature {{ i }}</label><br>
+                <input type="number" step="any" name="feature{{ i }}" id="feature{{ i }}" required>
+            </div>
+            {% endfor %}
+        </div>
+
+        <button type="button" onclick="fillRandom()">🎲 Generate Random</button>
+        <button type="submit">🔍 Predict</button>
+    </form>
+
+    {% if prediction_text %}
+        <div class="result">{{ prediction_text }}</div>
+    {% endif %}
+
+    {% if probabilities %}
+        <canvas id="probChart"></canvas>
+        <script>
+            const ctx = document.getElementById('probChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: {{ class_labels | safe }},
+                    datasets: [{
+                        label: 'Prediction Confidence',
+                        data: {{ probabilities | safe }},
+                        backgroundColor: [
+                            '#42a5f5', '#ef5350', '#66bb6a', '#ffca28', '#ab47bc'
+                        ],
+                        borderWidth: 1,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#333', font: { size: 14 } }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Model Confidence Distribution',
+                            color: '#333',
+                            font: { size: 18, weight: '600' }
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                }
+            });
+        </script>
+    {% endif %}
+
+    <script>
+        function fillRandom() {
+            for (let i = 1; i <= 20; i++) {
+                document.getElementById(`feature${i}`).value = (Math.random() * 4 - 2).toFixed(4);
+            }
+        }
+        window.onload = fillRandom;
+    </script>
+
+    <footer>
+        © 2025 <span>Lymphoma Detection AI</span> — Empowering Smart Healthcare
+    </footer>
+</body>
+</html>
