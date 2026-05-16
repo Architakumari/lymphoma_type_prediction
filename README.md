@@ -72,5 +72,5 @@ python app.py
 ---
 
 ## 👩‍💻 Author
-Archita Jaiswal  
+Archita 
 BTech CSE Student
