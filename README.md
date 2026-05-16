@@ -63,14 +63,6 @@ python app.py
 
 
 ---
-
-## 📊 Model Details
-- Algorithm Used: (e.g., Random Forest / SVM / Logistic Regression)
-- Accuracy: XX%
-- Dataset Size: XX samples
-
----
-
 ## 🎯 Future Improvements
 - Improve model accuracy
 - Deploy on cloud
